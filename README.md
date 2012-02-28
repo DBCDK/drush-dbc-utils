@@ -2,6 +2,8 @@
 
 Utilities for Drush. Release build scripts.
 
+Version 1.0.0.
+
 ## Use case ##
 
 Drush make is wonderful for building sites.
