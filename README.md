@@ -74,6 +74,9 @@ same time will have drush make fail.
   * [Drush_make](http://drupal.org/project/drush_make) version 2.3
 * [Drush](http://drupal.org/project/drush) version 5
 
+The usage of branches is designed to work together with
+[git-flow](https://github.com/nvie/gitflow).
+
 ## When to use what? ##
 
 ### A nightly test build ###
