@@ -1,7 +1,9 @@
 <?php
 /**
  * @file
- * Various drush utilities for DBC A/S use.
+ * Utilities for Drush. Release build scripts.
+ *
+ * © 2012 DBC A/S and TING.Community
  */
 
 /**
@@ -11,8 +13,8 @@
  */
 function dbc_utils_drush_help_alter(&$command) {
   if ($command['command'] == 'make') {
-    $command['options']['dbc-modules'] = 'emfle';
-    $command['options']['dbc-github-org'] = 'emfle';
+    $command['options']['dbc-modules'] = 'Which branches to checkout';
+    $command['options']['dbc-github-org'] = 'Which GitHub organization to manipulate branches on.';
   }
 }
 
@@ -39,7 +41,7 @@ function dbc_utils_make_validate_info($info) {
  */
 function _dbc_utils_make_validate_info($info) {
   $option = drush_get_option('dbc-modules', FALSE);
-  $valid_option_values = array('master', 'develop', 'release');
+  $valid_option_values = array('default', 'develop', 'release');
 
   if ($option && in_array($option, $valid_option_values)) {
     $repos = drush_get_option('dbc-github-org', 'DBCDK');
@@ -69,33 +71,35 @@ function _dbc_utils_make_validate_info($info) {
 
           // If we want the master branch for modules select it (actually unset
           // branches and let GitHub what the master branch is.
-          if ($option == 'master') {
+          if ($option == 'default') {
             if (isset($spec['download']['branch'])) {
               unset($spec['download']['branch']);
             }
           }
 
           // If we want the develop branch for modules select it if it exists -
-          // otherwise select the master branch.
+          // otherwise select the default branch.
           if ($option == 'develop') {
             if (in_array('develop', $branches)) {
               $spec['download']['branch'] = 'develop';
             }
-            else {
-              $spec['download']['branch'] = 'master';
+            elseif (isset($spec['download']['branch'])) {
+              unset($spec['download']['branch']);
             }
           }
 
           // If we want a release branch for modules select the most recent
           // release branch (based on the version number) - if no release
-          // branches exists select the master branch.
+          // branches exists select the default branch.
           if ($option == 'release') {
             if (empty($releases)) {
-              $spec['download']['branch'] = 'master';
+              if (isset($spec['download']['branch'])) {
+                unset($spec['download']['branch']);
+              }
             }
             else {
               // @TODO this sort is broken for a rare special case of version
-              // number comparison: '1.2' and '1.2-dbc1'.
+              // number comparison: '1.2' and '1.2+dbc1'.
               uasort($releases, 'version_compare');
               $spec['download']['branch'] = 'release/' . array_pop($releases);
             }
