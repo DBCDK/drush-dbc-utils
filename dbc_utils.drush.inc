@@ -4,6 +4,8 @@
  * Utilities for Drush. Release build scripts.
  *
  * © 2012 DBC A/S and TING.Community
+ *
+ * Version: 1.0.0.
  */
 
 /**
