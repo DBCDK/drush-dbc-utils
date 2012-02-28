@@ -71,3 +71,39 @@ same time will have drush make fail.
 * [Drush](http://drupal.org/project/drush) version 4.5 with
   * [Drush_make](http://drupal.org/project/drush_make) version 2.3
 * [Drush](http://drupal.org/project/drush) version 5
+
+## When to use what? ##
+
+### A nightly test build ###
+
+A nightly test build should use the make file from its develop branch
+combine with ``--dbc-modules=develop`` to track the most recent
+development.
+
+This will typically be the version used for testing user stories
+during a sprint.
+
+### Making integration test of the "most likely next" version ###
+
+Making integration test of the "most likely next" version (the "most
+likely next" version is when you haven't decided on a release yet and
+therefor haven't made a release branch) should use the master/default
+branch of the make file combined with ``--dbc-modules=default``.
+
+This will typically be used for sprint demo and ongoing integration
+testing.
+
+### Release preparation ###
+
+Preparing for a release would mean creating a release branch on the
+make file and using that combined with tagged version of repositories
+mentioned in the make file. Hence no need for ``--dbc-modules``.
+
+Under rare circumstances you might want to use
+``--dbc-modules=release``.
+
+### Creating a release ###
+
+Creating a release would mean using a tagged version of the make file
+and combining it with tagged version of repositories mentioned in the
+make file. Hence no need for ``--dbc-modules``.
