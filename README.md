@@ -2,7 +2,7 @@
 
 Utilities for Drush. Release build scripts.
 
-Version 1.0.0.
+Version 1.1.0.
 
 ## Use case ##
 
@@ -28,12 +28,12 @@ The options and their possible values are documented below:
 	--dbc-modules=develop
 
 Checkout repositories from a branch named "develop" if it exists or
-fall back to the default branch otherwise.
+fall back to the HEAD branch otherwise.
 
 	--dbc-modules=release
 
 Checkout repositories from the newest release branch if it exists or
-fall back to the default branch otherwise.
+fall back to the HEAD branch otherwise.
 
 The release branches are branches named "release/.*" (the git-flow
 standard) and the newest release branch is found be sorting the part
@@ -43,13 +43,13 @@ Version_compare will sort 7.x-1.2 before 7.x-1.3 etc. (although
 usually that will not be a problem since git-flow deletes release
 branches once they are finished).
 
-	--dbc-modules=default
+	--dbc-modules=HEAD
 	
-Checkout the repositories using their default branch. On GitHub the
-default branch defaults to master - but you can configure the default
-branch on a repository basis at GitHub.
+Checkout the repositories using their HEAD branch. On GitHub the HEAD
+branch defaults to master - but you can configure the HEAD branch on a
+repository basis at GitHub.
 
-Non-master defaults are useful if the master branch is actually used
+Non-master HEADs are useful if the master branch is actually used
 for tracking an upstream/forked repository.
 
 	--dbc-github-org=<org-re> (default: DBCDK)
@@ -74,6 +74,9 @@ same time will have drush make fail.
   * [Drush_make](http://drupal.org/project/drush_make) version 2.3
 * [Drush](http://drupal.org/project/drush) version 5
 
+The usage of branches is designed to work together with
+[git-flow](https://github.com/nvie/gitflow).
+
 ## When to use what? ##
 
 ### A nightly test build ###
@@ -89,8 +92,8 @@ during a sprint.
 
 Making integration test of the "most likely next" version (the "most
 likely next" version is when you haven't decided on a release yet and
-therefor haven't made a release branch) should use the master/default
-branch of the make file combined with ``--dbc-modules=default``.
+therefor haven't made a release branch) should use the master/HEAD
+branch of the make file combined with ``--dbc-modules=HEAD``.
 
 This will typically be used for sprint demo and ongoing integration
 testing.
