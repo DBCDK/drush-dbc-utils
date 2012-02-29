@@ -43,7 +43,7 @@ function dbc_utils_make_validate_info($info) {
  */
 function _dbc_utils_make_validate_info($info) {
   $option = drush_get_option('dbc-modules', FALSE);
-  $valid_option_values = array('default', 'develop', 'release');
+  $valid_option_values = array('HEAD', 'develop', 'release');
 
   if ($option && in_array($option, $valid_option_values)) {
     $repos = drush_get_option('dbc-github-org', 'DBCDK');
@@ -73,14 +73,14 @@ function _dbc_utils_make_validate_info($info) {
 
           // If we want the master branch for modules select it (actually unset
           // branches and let GitHub what the master branch is.
-          if ($option == 'default') {
+          if ($option == 'HEAD') {
             if (isset($spec['download']['branch'])) {
               unset($spec['download']['branch']);
             }
           }
 
           // If we want the develop branch for modules select it if it exists -
-          // otherwise select the default branch.
+          // otherwise select the HEAD branch.
           if ($option == 'develop') {
             if (in_array('develop', $branches)) {
               $spec['download']['branch'] = 'develop';
@@ -92,7 +92,7 @@ function _dbc_utils_make_validate_info($info) {
 
           // If we want a release branch for modules select the most recent
           // release branch (based on the version number) - if no release
-          // branches exists select the default branch.
+          // branches exists select the HEAD branch.
           if ($option == 'release') {
             if (empty($releases)) {
               if (isset($spec['download']['branch'])) {
@@ -109,7 +109,7 @@ function _dbc_utils_make_validate_info($info) {
 
           drush_log(dt('Using @branch for @repos.',
               array(
-                '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the default branch',
+                '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
                 '@repos' => $spec['download']['url'],
               )), 'ok');
 
