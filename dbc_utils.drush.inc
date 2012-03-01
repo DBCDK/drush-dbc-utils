@@ -14,7 +14,7 @@
  * In Drush 5 we must define the options.
  */
 function dbc_utils_drush_help_alter(&$command) {
-  if ($command['command'] == 'make') {
+  if ($command['command'] == 'make' || $command['command'] == 'ding-deploy') {
     $command['options']['dbc-modules'] = 'Which branches to checkout';
     $command['options']['dbc-github-org'] = 'Which GitHub organization to manipulate branches on.';
   }
