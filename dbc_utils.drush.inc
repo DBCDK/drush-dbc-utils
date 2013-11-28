@@ -45,25 +45,50 @@ function _dbc_utils_make_validate_info($info) {
   $option = drush_get_option('dbc-modules', FALSE);
   $valid_option_values = array('HEAD', 'develop', 'release');
 
-  if ($option && in_array($option, $valid_option_values)) {
-    $repos = drush_get_option('dbc-github-org', 'DBCDK');
-    if (drush_get_option('ding2-dev', FALSE)) {
+  if (! $option ) return $info;
+  if (! in_array($option, $valid_option_values))  {
+      return drush_set_error('DBC_UTILS_ERROR', dt($option."not in ['HEAD', 'develop', 'release']" ));
+  }
+  
+  
+  $repos = drush_get_option('dbc-github-org', 'DBCDK');
+  if (drush_get_option('ding2-dev', FALSE)) {
       return drush_set_error('DBC_UTILS_ERROR', dt('--ding2-dev is not compatible with --dbc-modules.'));
-    }
-    drush_log(dt("Checking out $option branches of $repos Github organization repositories."), 'ok');
+  }
+  drush_log(dt("Checking out $option branches of $repos Github organization repositories."), 'ok');
 
-    foreach (array('projects', 'libraries', ) as $key) {
-      if (isset($info[$key])) {
-        foreach ($info[$key] as $name => &$spec) {
-          // Only consider git repositories.
-          if (!empty($spec['download']['type']) && $spec['download']['type'] == 'git') {
-            // Only mess with repos from the right organisations on
-            // github. The [/:] makes this work with both http and git
-            // protocol specifications.
-            if (preg_match("{github\.com[/:]($repos)/}i", $spec['download']['url'])) {
+  foreach (array('projects', 'libraries', ) as $key) {
+    if (isset($info[$key])) {      
+      foreach ($info[$key] as $name => &$spec) {
+        // Only consider git repositories.
+        if (!empty($spec['download']['type']) && $spec['download']['type'] == 'git') {
+          // Only mess with repos from the right organisations on
+          // github. The [/:] makes this work with both http and git
+          // protocol specifications.
+          if (preg_match("{github\.com[/:]($repos)/}i", $spec['download']['url'])) {
+            // If we want the master branch for modules select it (actually unset
+            // branches and let GitHub what the master branch is.
+            if ($option == 'HEAD') {
+              if (isset($spec['download']['branch'])) {
+                unset($spec['download']['branch']);
+              }
+            }
+                  
+            // If we want the develop branch for modules select it if it exists -
+            // otherwise select the HEAD branch.
+            // Expect a develop branch to exist in all modules.
+            if ($option == 'develop') {
+              $spec['download']['branch'] = 'develop';
+            }
+                  
+            // If we want a release branch for modules select the most recent
+            // release branch (based on the version number) - if no release
+            // branches exists select the HEAD branch.
+            if ($option == 'release') {
+
               $branches = array();
               $releases = array();
-
+              
               // Locate branches and release branches (git flow) on the repository.
               drush_shell_exec('git ls-remote --heads %s', $spec['download']['url']);
               foreach (drush_shell_exec_output() as $branch) {
@@ -71,57 +96,33 @@ function _dbc_utils_make_validate_info($info) {
                 if (preg_match('@.*refs/heads/release/(.*)@', $branch, $matches)) {
                   $releases = $matches[0];
                 }
-              }
+              }              
 
-              // If we want the master branch for modules select it (actually unset
-              // branches and let GitHub what the master branch is.
-              if ($option == 'HEAD') {
+              if (empty($releases)) {
                 if (isset($spec['download']['branch'])) {
                   unset($spec['download']['branch']);
                 }
               }
-
-              // If we want the develop branch for modules select it if it exists -
-              // otherwise select the HEAD branch.
-              if ($option == 'develop') {
-                if (in_array('develop', $branches)) {
-                  $spec['download']['branch'] = 'develop';
-                }
-                elseif (isset($spec['download']['branch'])) {
-                  unset($spec['download']['branch']);
-                }
+              else {
+                // @TODO this sort is broken for a rare special case of version
+                // number comparison: '1.2' and '1.2+dbc1'.
+                uasort($releases, 'version_compare');
+                $spec['download']['branch'] = 'release/' . array_pop($releases);
               }
-
-              // If we want a release branch for modules select the most recent
-              // release branch (based on the version number) - if no release
-              // branches exists select the HEAD branch.
-              if ($option == 'release') {
-                if (empty($releases)) {
-                  if (isset($spec['download']['branch'])) {
-                    unset($spec['download']['branch']);
-                  }
-                }
-                else {
-                  // @TODO this sort is broken for a rare special case of version
-                  // number comparison: '1.2' and '1.2+dbc1'.
-                  uasort($releases, 'version_compare');
-                  $spec['download']['branch'] = 'release/' . array_pop($releases);
-                }
-              }
-
-              drush_log(dt('Using @branch for @repos.',
-                  array(
-                    '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
-                    '@repos' => $spec['download']['url'],
-                  )), 'ok');
-
-              // Unset any tag or revision specifications.
-              if (isset($spec['download']['tag'])) {
-                unset($spec['download']['tag']);
-              }
-              if (isset($spec['download']['revision'])) {
-                unset($spec['download']['revision']);
-              }
+            }
+                  
+            drush_log(dt('Using @branch for @repos.',
+                         array(
+                           '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
+                           '@repos' => $spec['download']['url'],
+                         )), 'ok');
+                  
+            // Unset any tag or revision specifications.
+            if (isset($spec['download']['tag'])) {
+              unset($spec['download']['tag']);
+            }
+            if (isset($spec['download']['revision'])) {
+              unset($spec['download']['revision']);
             }
           }
         }
