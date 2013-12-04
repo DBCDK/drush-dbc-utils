@@ -38,6 +38,11 @@ function dbc_utils_make_validate_info($info) {
   return _dbc_utils_make_validate_info($info);
 }
 
+
+function get_heads($info) {
+
+}
+
 /**
  * Internal version of the validate makefile.
  */
@@ -45,20 +50,25 @@ function _dbc_utils_make_validate_info($info) {
   $option = drush_get_option('dbc-modules', FALSE);
   $valid_option_values = array('HEAD', 'develop', 'release');
 
-  if (! $option ) return $info;
-  if (! in_array($option, $valid_option_values))  {
-      return drush_set_error('DBC_UTILS_ERROR', dt($option."not in ['HEAD', 'develop', 'release']" ));
+  if (!$option) {
+    return $info;
   }
-  
-  
+  if (!in_array($option, $valid_option_values)) {
+    //  return drush_set_error('DBC_UTILS_ERROR', dt($option."not in ['HEAD', 'develop', 'release']" ));
+  }
+
+
   $repos = drush_get_option('dbc-github-org', 'DBCDK');
   if (drush_get_option('ding2-dev', FALSE)) {
-      return drush_set_error('DBC_UTILS_ERROR', dt('--ding2-dev is not compatible with --dbc-modules.'));
+    return drush_set_error('DBC_UTILS_ERROR', dt('--ding2-dev is not compatible with --dbc-modules.'));
   }
   drush_log(dt("Checking out $option branches of $repos Github organization repositories."), 'ok');
 
-  foreach (array('projects', 'libraries', ) as $key) {
-    if (isset($info[$key])) {      
+
+  $modules = getGitHeadsFromBranches($info, $repos);
+
+  foreach (array('projects', 'libraries',) as $key) {
+    if (isset($info[$key])) {
       foreach ($info[$key] as $name => &$spec) {
         // Only consider git repositories.
         if (!empty($spec['download']['type']) && $spec['download']['type'] == 'git') {
@@ -73,30 +83,32 @@ function _dbc_utils_make_validate_info($info) {
                 unset($spec['download']['branch']);
               }
             }
-                  
-            // If we want the develop branch for modules select it if it exists -
-            // otherwise select the HEAD branch.
-            // Expect a develop branch to exist in all modules.
-            if ($option == 'develop') {
+            elseif ($option == 'develop') {
+              // If we want the develop branch for modules select it if it exists -
+              // otherwise select the HEAD branch.
+              // Expect a develop branch to exist in all modules.
+
               $spec['download']['branch'] = 'develop';
             }
-                  
-            // If we want a release branch for modules select the most recent
-            // release branch (based on the version number) - if no release
-            // branches exists select the HEAD branch.
-            if ($option == 'release') {
+            elseif ($option == 'release') {
+              // If we want a release branch for modules select the most recent
+              // release branch (based on the version number) - if no release
+              // branches exists select the HEAD branch.
+
 
               $branches = array();
               $releases = array();
-              
+
               // Locate branches and release branches (git flow) on the repository.
-              drush_shell_exec('git ls-remote --heads %s', $spec['download']['url']);
-              foreach (drush_shell_exec_output() as $branch) {
+              //drush_shell_exec('git ls-remote --heads %s', $spec['download']['url']);
+              $modulename = end(explode("/", $spec['download']['url']));
+
+              foreach ($modules[$modulename] as $branch) {
                 $branches[] = preg_replace('@.*refs/heads/(.*)@', '$1', $branch);
                 if (preg_match('@.*refs/heads/release/(.*)@', $branch, $matches)) {
                   $releases = $matches[0];
                 }
-              }              
+              }
 
               if (empty($releases)) {
                 if (isset($spec['download']['branch'])) {
@@ -110,13 +122,24 @@ function _dbc_utils_make_validate_info($info) {
                 $spec['download']['branch'] = 'release/' . array_pop($releases);
               }
             }
-                  
+            else {
+              // feature branch given.. if name exists in module check it out.
+              // else check out develop
+              $modulename = end(explode("/", $spec['download']['url']));
+              if (isset($modules[$modulename]) && hasGitBranch($modules[$modulename], $option)) {
+                $spec['download']['branch'] = $option;
+              }
+              else {
+                $spec['download']['branch'] = 'develop';
+              }
+            }
+
             drush_log(dt('Using @branch for @repos.',
-                         array(
-                           '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
-                           '@repos' => $spec['download']['url'],
-                         )), 'ok');
-                  
+              array(
+                '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
+                '@repos' => $spec['download']['url'],
+              )), 'ok');
+
             // Unset any tag or revision specifications.
             if (isset($spec['download']['tag'])) {
               unset($spec['download']['tag']);
@@ -130,5 +153,69 @@ function _dbc_utils_make_validate_info($info) {
     }
   }
 
+
+  $timeused = microtime(TRUE) - $start;
+
+  drush_log('ja7: time ' . $timeused, 'ok');
+
+  //return drush_set_error('DBC_UTILS_ERROR', dt($option."Debugging " ));
   return $info;
+}
+
+
+function hasGitBranch($lines, $branch) {
+  foreach ($lines as $line) {
+    if (!(strpos($line, $branch) === FALSE)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * @param $info
+ * @return Array of lines from
+ */
+function getGitHeadsFromBranches($info, $repos) {
+  $start = microtime(TRUE);
+
+  drush_log(dt("ja7: debug loading all modules"), 'ok');
+  $modules_to_check = "";
+  foreach (array('projects', 'libraries',) as $key) {
+    if (isset($info[$key])) {
+      foreach ($info[$key] as $name => $spec) {
+        if (empty($spec['download']['type'])) {
+          continue;
+        }
+        if ($spec['download']['type'] != 'git') {
+          continue;
+        }
+        if (!preg_match("{github\.com[/:]($repos)/}i", $spec['download']['url'])) {
+          continue;
+        }
+
+        $modules_to_check = $modules_to_check . " " . $spec['download']['url'];
+      }
+    }
+  }
+
+  $timeused = microtime(TRUE) - $start;
+  drush_log('ja7: time ' . $timeused, 'ok');
+
+  drush_log('ja7: modules found: ' . $modules_to_check, 'ok');
+
+  if($modules_to_check == "") {
+      return;
+    }
+
+
+  drush_log("ja7: parallel " . $modules_to_check);
+  drush_shell_exec("parallel -j 10 git ls-remote --heads {} \| sed -e 's/^/{/}+/' ::: " . $modules_to_check);
+
+  $modules = array();
+  foreach (drush_shell_exec_output() as $line) {
+    $split_line = explode("+", $line);
+    $modules[$split_line[0]][] = $split_line[1];
+  }
+  return $modules;
 }
