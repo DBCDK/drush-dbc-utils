@@ -21,26 +21,12 @@ function dbc_utils_drush_help_alter(&$command) {
 }
 
 /**
- * Implements hook_drush_make_validate_info().
- *
- * This is the Drush 4.5 variant of the validate makefile hook.
- */
-function dbc_utils_drush_make_validate_info($info) {
-  return _dbc_utils_make_validate_info($info);
-}
-
-/**
  * Implements hook_make_validate_info().
  *
  * This is the Drush 5 variant of the validate makefile hook.
  */
 function dbc_utils_make_validate_info($info) {
   return _dbc_utils_make_validate_info($info);
-}
-
-
-function get_heads($info) {
-
 }
 
 /**
@@ -65,7 +51,11 @@ function _dbc_utils_make_validate_info($info) {
   drush_log(dt("Checking out $option branches of $repos Github organization repositories."), 'ok');
 
 
-  $modules = getGitHeadsFromBranches($info, $repos);
+  try {
+    $modules = getGitHeadsFromBranches($info, $repos);
+  } catch (EXception $e) {
+    return drush_set_error('DBC_UTILS_ERROR', $e->getMessage());
+  }
 
   foreach (array('projects', 'libraries',) as $key) {
     if (isset($info[$key])) {
@@ -153,12 +143,6 @@ function _dbc_utils_make_validate_info($info) {
     }
   }
 
-
-  $timeused = microtime(TRUE) - $start;
-
-  drush_log('ja7: time ' . $timeused, 'ok');
-
-  //return drush_set_error('DBC_UTILS_ERROR', dt($option."Debugging " ));
   return $info;
 }
 
@@ -173,13 +157,12 @@ function hasGitBranch($lines, $branch) {
 }
 
 /**
+ * fetch Git Heads from branches in baralell.
  * @param $info
  * @return Array of lines from
+ * Concurent
  */
 function getGitHeadsFromBranches($info, $repos) {
-  $start = microtime(TRUE);
-
-  drush_log(dt("ja7: debug loading all modules"), 'ok');
   $modules_to_check = "";
   foreach (array('projects', 'libraries',) as $key) {
     if (isset($info[$key])) {
@@ -199,18 +182,19 @@ function getGitHeadsFromBranches($info, $repos) {
     }
   }
 
-  $timeused = microtime(TRUE) - $start;
-  drush_log('ja7: time ' . $timeused, 'ok');
-
-  drush_log('ja7: modules found: ' . $modules_to_check, 'ok');
-
   if($modules_to_check == "") {
       return;
-    }
+  }
 
+  $concurrency = drush_get_option('concurrency', '1');
 
-  drush_log("ja7: parallel " . $modules_to_check);
-  drush_shell_exec("parallel -j 10 git ls-remote --heads {} \| sed -e 's/^/{/}+/' ::: " . $modules_to_check);
+  $cmd = "parallel -j ".$concurrency." git ls-remote --heads {} \| sed -e 's/^/{/}+/' ::: " . $modules_to_check;
+  $res=drush_shell_exec( $cmd );
+
+  if( ! $res ) {
+    drush_log(dt("check for branched failed command used : ".$cmd.""), 'error');
+    throw new Exception("Unable to look up git heads");
+  }
 
   $modules = array();
   foreach (drush_shell_exec_output() as $line) {
