@@ -39,10 +39,6 @@ function _dbc_utils_make_validate_info($info) {
   if (!$option) {
     return $info;
   }
-  if (!in_array($option, $valid_option_values)) {
-    //  return drush_set_error('DBC_UTILS_ERROR', dt($option."not in ['HEAD', 'develop', 'release']" ));
-  }
-
 
   $repos = drush_get_option('dbc-github-org', 'DBCDK');
   if (drush_get_option('ding2-dev', FALSE)) {
@@ -53,7 +49,7 @@ function _dbc_utils_make_validate_info($info) {
 
   try {
     $modules = getGitHeadsFromBranches($info, $repos);
-  } catch (EXception $e) {
+  } catch (Exception $e) {
     return drush_set_error('DBC_UTILS_ERROR', $e->getMessage());
   }
 
@@ -127,7 +123,7 @@ function _dbc_utils_make_validate_info($info) {
             drush_log(dt('Using @branch for @repos.',
               array(
                 '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
-                '@repos' => $spec['download']['url'],
+                '@repos' => $spec['download']['url'] ? $spec['download']['url']: $modulename,
               )), 'ok');
 
             // Unset any tag or revision specifications.
@@ -146,10 +142,14 @@ function _dbc_utils_make_validate_info($info) {
   return $info;
 }
 
-
+/**
+ * @param $lines lines from git ls-remote --heads
+ * @param $branch branch name to look for
+ * @return bool true if branch is located in the lines
+ */
 function hasGitBranch($lines, $branch) {
   foreach ($lines as $line) {
-    if (!(strpos($line, $branch) === FALSE)) {
+    if (strpos($line, $branch) !== FALSE ) {
       return TRUE;
     }
   }
@@ -159,8 +159,9 @@ function hasGitBranch($lines, $branch) {
 /**
  * fetch Git Heads from branches in baralell.
  * @param $info
- * @return Array of lines from
- * Concurent
+ * @param $repos // repos option from
+ * @throws Exception
+ * @return mappe with 'modulename' as key and lines from each git ls-remote ...
  */
 function getGitHeadsFromBranches($info, $repos) {
   $modules_to_check = "";
@@ -177,18 +178,20 @@ function getGitHeadsFromBranches($info, $repos) {
           continue;
         }
 
-        $modules_to_check = $modules_to_check . " " . $spec['download']['url'];
+        $modules_to_check = $modules_to_check . ' '  . $spec['download']['url'];
       }
     }
   }
 
   if($modules_to_check == "") {
-      return;
+        return;
   }
 
-  $concurrency = drush_get_option('concurrency', '1');
+  //! ok to run with concurrency 10 for checks when concurrency is not set by user
+  $concurrency = drush_get_option('concurrency', '10');
 
-  $cmd = "parallel -j ".$concurrency." git ls-remote --heads {} \| sed -e 's/^/{/}+/' ::: " . $modules_to_check;
+  // some distros force parallel to run in --trollef mode using --gnu to overwrite.
+  $cmd = "parallel --gnu -j ".$concurrency." git ls-remote --heads {} \| sed -e 's/^/{/}+/' ::: ".$modules_to_check ;
   $res=drush_shell_exec( $cmd );
 
   if( ! $res ) {
@@ -201,5 +204,6 @@ function getGitHeadsFromBranches($info, $repos) {
     $split_line = explode("+", $line);
     $modules[$split_line[0]][] = $split_line[1];
   }
+
   return $modules;
 }
