@@ -61,7 +61,7 @@ function _dbc_utils_make_validate_info($info) {
           // Only mess with repos from the right organisations on
           // github. The [/:] makes this work with both http and git
           // protocol specifications.
-          if (preg_match("{github\.com[/:]($repos)/}i", $spec['download']['url'])) {
+          if (preg_match("{github\.com[/:]($repos)/}i", $spec['download']['url']) || preg_match("{git\.dbc\.dk}i", $spec['download']['url']) ) {
             // If we want the master branch for modules select it (actually unset
             // branches and let GitHub what the master branch is.
             if ($option == 'HEAD') {
