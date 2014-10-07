@@ -174,7 +174,7 @@ function getGitHeadsFromBranches($info, $repos) {
         if ($spec['download']['type'] != 'git') {
           continue;
         }
-        if (!preg_match("{github\.com[/:]($repos)/}i", $spec['download']['url'])) {
+        if (!preg_match("{github\.com[/:]($repos)/}i", $spec['download']['url']) && !preg_match("{git\.dbc\.dk[/:]($repos)/}i", $spec['download']['url'])) {
           continue;
         }
 
