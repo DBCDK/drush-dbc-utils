@@ -111,7 +111,8 @@ function _dbc_utils_make_validate_info($info) {
             else {
               // feature branch given.. if name exists in module check it out.
               // else check out develop
-              $modulename = end(explode("/", $spec['download']['url']));
+              $module_array = explode("/", $spec['download']['url']);
+              $modulename = end($module_array);
               if (isset($modules[$modulename]) && hasGitBranch($modules[$modulename], $option)) {
                 $spec['download']['branch'] = $option;
               }
