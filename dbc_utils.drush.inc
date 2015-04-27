@@ -18,6 +18,38 @@ function dbc_utils_drush_help_alter(&$command) {
     $command['options']['dbc-modules'] = 'Which branches to checkout';
     $command['options']['dbc-github-org'] = 'Which GitHub organization to manipulate branches on.';
   }
+  if($command['command'] == 'makefile-to-yaml'){
+    $command['options']['dbc-modules'] = 'transform given makefile to yaml';
+  }
+}
+
+/**
+ *  Implements hook_drush_command
+ */
+function dbc_utils_drush_command() {
+  return array(
+    'makefile-to-yaml' => array(
+      'description' => dt('transform given makefile to yaml'),
+      'arguments' => array(
+        'arg1' => dt('filename')
+      ),
+      'examples' => array(
+        'standard' => 'm2y [filename]'
+      )
+
+    ),
+    'aliases' => array('m2y'),
+  );
+}
+
+
+function drush_dbc_utils_makefile_to_yaml($filename){
+  $info = make_parse_info_file($filename);
+
+  // NOTICE - requires pecl yaml plugin; https://pecl.php.net/package/yaml
+  $yml = yaml_emit($info);
+  // for now write a file (bibdk.make.yaml)
+  file_put_contents('/home/pjo/postgres/profiles/bibdk/bibdk.make.yaml',$yml);
 }
 
 /**
