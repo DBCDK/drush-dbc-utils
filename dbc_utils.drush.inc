@@ -48,8 +48,7 @@ function drush_dbc_utils_makefile_to_yaml($filename){
 
   // NOTICE - requires pecl yaml plugin; https://pecl.php.net/package/yaml
   $yml = yaml_emit($info);
-  // for now write a file (bibdk.make.yaml)
-  file_put_contents('/home/pjo/postgres/profiles/bibdk/bibdk.make.yaml',$yml);
+  return $yml;
 }
 
 /**
