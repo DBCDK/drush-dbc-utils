@@ -109,11 +109,12 @@ function _dbc_utils_make_validate_info($info) {
                 }
               }
 
-              drush_log(dt('Using @branch for @repos.',
-                  array(
-                    '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
-                    '@repos' => $spec['download']['url'],
-                  )), 'ok');
+              $msg = dt('Using @branch for @repos.',
+                array(
+                  '@branch' => $spec['download']['branch'] ? $spec['download']['branch'] : 'the HEAD branch',
+                  '@repos' => $spec['download']['url'],
+                ));
+              drush_log($msg, 'ok');
 
               // Unset any tag or revision specifications.
               if (isset($spec['download']['tag'])) {
