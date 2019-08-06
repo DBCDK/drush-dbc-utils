@@ -2,7 +2,7 @@
 
 Utilities for Drush. Release build scripts.
 
-Version 1.1.0.
+Version 1.2.0
 
 ## Use case ##
 
@@ -21,6 +21,9 @@ Enter:
 
 This will checkout the repositories with their develop branches.
 
+As it checks the remote git repository before checkout running with
+--concurrency=10 is recommended.
+
 ## Usage ##
 
 The options and their possible values are documented below:
@@ -29,6 +32,11 @@ The options and their possible values are documented below:
 
 Checkout repositories from a branch named "develop" if it exists or
 fall back to the HEAD branch otherwise.
+
+     --dbc-modules=[feature/branch]
+
+Checkout reposirories from a branch named "feature/branch" if it exists
+or fall back to the branch named "develop"
 
 	--dbc-modules=release
 
@@ -70,8 +78,6 @@ same time will have drush make fail.
 	
 ## Compatibility ##
 
-* [Drush](http://drupal.org/project/drush) version 4.5 with
-  * [Drush_make](http://drupal.org/project/drush_make) version 2.3
 * [Drush](http://drupal.org/project/drush) version 5
 
 The usage of branches is designed to work together with
@@ -97,6 +103,13 @@ branch of the make file combined with ``--dbc-modules=HEAD``.
 
 This will typically be used for sprint demo and ongoing integration
 testing.
+
+### Dependency's ###
+
+The module depend on GNU Parallel
+
+https://www.gnu.org/software/parallel/
+
 
 ### Release preparation ###
 
